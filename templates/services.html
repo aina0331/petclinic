@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Services{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2>Services</h2>
+  <p>Clinic service catalog and pricing</p>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>#</th><th>Service</th><th>Description</th><th>Duration</th><th>Price</th>
+      </tr></thead>
+      <tbody>
+      {% for s in services %}
+      <tr>
+        <td style="color:var(--gray-400);font-size:12px">{{ s.service_id }}</td>
+        <td><b>{{ s.service_name }}</b></td>
+        <td style="color:var(--gray-600)">{{ s.description or '—' }}</td>
+        <td>{{ s.duration_minutes }} min</td>
+        <td><b style="color:var(--teal)">₱{{ "%.2f"|format(s.price) }}</b></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

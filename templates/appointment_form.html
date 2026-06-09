@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if appt else 'New' }} Appointment{% endblock %}
+{% block content %}
+<div class="page-header-row">
+  <h2>{{ 'Edit Appointment' if appt else 'Book New Appointment' }}</h2>
+  <a href="{{ url_for('appointments') }}" class="btn btn-ghost">← Back</a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="POST">
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label>Client *</label>
+          <select name="client_id" id="clientSelect" required onchange="loadPets(this.value)">
+            <option value="">Select client…</option>
+            {% for c in clients %}
+            <option value="{{ c.client_id }}" {% if appt and appt.client_id==c.client_id %}selected{% endif %}>
+              {{ c.first_name }} {{ c.last_name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Pet *</label>
+          <select name="pet_id" id="petSelect" required>
+            <option value="">Select client first…</option>
+            {% if pets %}
+              {% for p in pets %}
+              <option value="{{ p.pet_id }}" {% if appt and appt.pet_id==p.pet_id %}selected{% endif %}>
+                {{ p.pet_name }} ({{ p.species }})
+              </option>
+              {% endfor %}
+            {% endif %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Veterinarian *</label>
+          <select name="vet_id" required>
+            <option value="">Select vet…</option>
+            {% for v in vets %}
+            <option value="{{ v.vet_id }}" {% if appt and appt.vet_id==v.vet_id %}selected{% endif %}>
+              Dr. {{ v.first_name }} {{ v.last_name }} — {{ v.specialization }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Service *</label>
+          <select name="service_id" required>
+            <option value="">Select service…</option>
+            {% for s in services %}
+            <option value="{{ s.service_id }}" {% if appt and appt.service_id==s.service_id %}selected{% endif %}>
+              {{ s.service_name }} — ₱{{ "%.2f"|format(s.price) }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Appointment Date *</label>
+          <input type="date" name="appointment_date" required
+                 value="{{ appt.appointment_date if appt else '' }}">
+        </div>
+
+        <div class="form-group">
+          <label>Appointment Time *</label>
+          <select name="appointment_time" required>
+            {% set times = ['08:00','09:00','10:00','11:00','13:00','14:00','15:00','16:00','17:00'] %}
+            {% for t in times %}
+            <option value="{{ t }}" {% if appt and appt.appointment_time[:5]==t %}selected{% endif %}>
+              {{ t }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        {% if appt %}
+        <div class="form-group">
+          <label>Status</label>
+          <select name="status">
+            {% for s in ['Pending','Confirmed','Completed','Cancelled'] %}
+            <option {% if appt.status==s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+
+        <div class="form-group full">
+          <label>Notes (optional)</label>
+          <textarea name="notes" placeholder="Any special instructions or concerns…">{{ appt.notes if appt else '' }}</textarea>
+        </div>
+
+      </div>
+      <div style="margin-top:20px;display:flex;gap:10px">
+        <button type="submit" class="btn btn-primary">
+          {{ 'Save Changes' if appt else 'Book Appointment' }}
+        </button>
+        <a href="{{ url_for('appointments') }}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function loadPets(clientId) {
+  const sel = document.getElementById('petSelect');
+  sel.innerHTML = '<option>Loading...</option>';
+  if (!clientId) { sel.innerHTML = '<option value="">Select client first…</option>'; return; }
+  fetch(`/api/pets/${clientId}`)
+    .then(r => r.json())
+    .then(pets => {
+      sel.innerHTML = '<option value="">Select pet…</option>';
+      pets.forEach(p => {
+        sel.innerHTML += `<option value="${p.pet_id}">${p.pet_name} (${p.species})</option>`;
+      });
+    });
+}
+</script>
+{% endblock %}

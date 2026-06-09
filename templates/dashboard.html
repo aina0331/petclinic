@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2>Good day! 🐾</h2>
+  <p>Here's what's happening at the clinic today — {{ today }}</p>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card teal">
+    <div class="label">Today's Appointments</div>
+    <div class="value">{{ stats.today }}</div>
+    <div class="sub">Scheduled for today</div>
+  </div>
+  <div class="stat-card amber">
+    <div class="label">Pending</div>
+    <div class="value">{{ stats.pending }}</div>
+    <div class="sub">Awaiting confirmation</div>
+  </div>
+  <div class="stat-card green">
+    <div class="label">Confirmed</div>
+    <div class="value">{{ stats.confirmed }}</div>
+    <div class="sub">Ready to go</div>
+  </div>
+  <div class="stat-card blue">
+    <div class="label">Total Appointments</div>
+    <div class="value">{{ stats.total }}</div>
+    <div class="sub">All time</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+  <div class="stat-card">
+    <div class="label">Registered Clients</div>
+    <div class="value" style="font-size:26px">{{ stats.clients }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Active Veterinarians</div>
+    <div class="value" style="font-size:26px">{{ stats.vets }}</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>Recent Appointments</h3>
+    <a href="{{ url_for('new_appointment') }}" class="btn btn-primary btn-sm">+ New Appointment</a>
+  </div>
+  <div class="card-body" style="padding:0">
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Date</th><th>Time</th><th>Client</th><th>Pet</th><th>Veterinarian</th><th>Service</th><th>Status</th>
+        </tr></thead>
+        <tbody>
+        {% for a in upcoming %}
+        <tr>
+          <td>{{ a.appointment_date }}</td>
+          <td>{{ a.appointment_time }}</td>
+          <td>{{ a.client_name }}</td>
+          <td>🐾 {{ a.pet_name }}</td>
+          <td>Dr. {{ a.vet_name }}</td>
+          <td>{{ a.service_name }}</td>
+          <td><span class="badge {{ a.status|lower }}">{{ a.status }}</span></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

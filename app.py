@@ -1,0 +1,321 @@
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify # type: ignore
+import sqlite3, os
+from datetime import date, datetime
+
+app = Flask(__name__)
+app.secret_key = "petclinic_secret_2024"
+DB = "petclinic.db"
+
+# ─── DB HELPERS ───────────────────────────────────────────────
+def get_db():
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
+
+def init_db():
+    with get_db() as conn:
+        conn.executescript("""
+        CREATE TABLE IF NOT EXISTS CLIENT (
+            client_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+            first_name     TEXT NOT NULL,
+            last_name      TEXT NOT NULL,
+            contact_number TEXT NOT NULL,
+            email          TEXT NOT NULL UNIQUE,
+            address        TEXT,
+            created_at     TEXT DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS VETERINARIAN (
+            vet_id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            first_name     TEXT NOT NULL,
+            last_name      TEXT NOT NULL,
+            specialization TEXT,
+            contact_number TEXT NOT NULL,
+            is_active      INTEGER DEFAULT 1
+        );
+        CREATE TABLE IF NOT EXISTS VET_SCHEDULE (
+            schedule_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            vet_id      INTEGER NOT NULL,
+            day_of_week TEXT NOT NULL,
+            start_time  TEXT NOT NULL,
+            end_time    TEXT NOT NULL,
+            FOREIGN KEY (vet_id) REFERENCES VETERINARIAN(vet_id) ON DELETE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS SERVICE (
+            service_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            service_name     TEXT NOT NULL,
+            description      TEXT,
+            duration_minutes INTEGER NOT NULL,
+            price            REAL NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS PET (
+            pet_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id INTEGER NOT NULL,
+            pet_name  TEXT NOT NULL,
+            species   TEXT NOT NULL,
+            breed     TEXT,
+            age       INTEGER,
+            weight_kg REAL,
+            FOREIGN KEY (client_id) REFERENCES CLIENT(client_id) ON DELETE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS APPOINTMENT (
+            appointment_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id        INTEGER NOT NULL,
+            pet_id           INTEGER NOT NULL,
+            vet_id           INTEGER NOT NULL,
+            service_id       INTEGER NOT NULL,
+            appointment_date TEXT NOT NULL,
+            appointment_time TEXT NOT NULL,
+            status           TEXT DEFAULT 'Pending',
+            notes            TEXT,
+            created_at       TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (client_id)  REFERENCES CLIENT(client_id),
+            FOREIGN KEY (pet_id)     REFERENCES PET(pet_id),
+            FOREIGN KEY (vet_id)     REFERENCES VETERINARIAN(vet_id),
+            FOREIGN KEY (service_id) REFERENCES SERVICE(service_id),
+            UNIQUE (vet_id, appointment_date, appointment_time)
+        );
+        """)
+        # Seed only if empty
+        if conn.execute("SELECT COUNT(*) FROM CLIENT").fetchone()[0] == 0:
+            conn.executescript("""
+            INSERT INTO CLIENT (first_name,last_name,contact_number,email,address) VALUES
+            ('Juan','Dela Cruz','09171234567','juan@mail.com','Quezon City'),
+            ('Maria','Reyes','09281234567','maria@mail.com','Makati City'),
+            ('Carlos','Santos','09391234567','carlo@mail.com','Pasig City'),
+            ('Ana','Garcia','09451234567','ana@mail.com','Taguig City'),
+            ('Pedro','Lim','09561234567','pedro@mail.com','Manila City');
+
+            INSERT INTO VETERINARIAN (first_name,last_name,specialization,contact_number) VALUES
+            ('Ricardo','Santos','General Practice','09171110001'),
+            ('Elena','Cruz','Dental Care','09171110002'),
+            ('Marco','Bautista','Surgery','09171110003'),
+            ('Lisa','Torres','Dermatology','09171110004');
+
+            INSERT INTO VET_SCHEDULE (vet_id,day_of_week,start_time,end_time) VALUES
+            (1,'MON','08:00','17:00'),(1,'WED','08:00','17:00'),(1,'FRI','08:00','17:00'),
+            (2,'TUE','09:00','18:00'),(2,'THU','09:00','18:00'),
+            (3,'MON','10:00','16:00'),(3,'SAT','08:00','12:00'),
+            (4,'WED','13:00','20:00'),(4,'FRI','13:00','20:00');
+
+            INSERT INTO SERVICE (service_name,description,duration_minutes,price) VALUES
+            ('General Checkup','Routine health examination',30,500.00),
+            ('Vaccination','Standard vaccine administration',20,350.00),
+            ('Dental Cleaning','Teeth cleaning and oral inspection',60,1500.00),
+            ('Grooming','Full bath, trim, and styling',90,800.00),
+            ('Deworming','Oral deworming treatment',15,250.00),
+            ('Surgical Consult','Pre/post-operative consultation',45,1000.00);
+
+            INSERT INTO PET (client_id,pet_name,species,breed,age,weight_kg) VALUES
+            (1,'Doggo','Dog','Labrador',3,25.50),
+            (1,'Buddy','Dog','Aspin',2,12.00),
+            (2,'Whiskers','Cat','Persian',5,4.20),
+            (3,'Rocky','Dog','Shih Tzu',1,5.80),
+            (4,'Nemo','Fish','Goldfish',1,0.10),
+            (5,'Tweety','Bird','Budgerigar',2,0.08);
+
+            INSERT INTO APPOINTMENT (client_id,pet_id,vet_id,service_id,appointment_date,appointment_time,status) VALUES
+            (1,1,1,1,'2024-06-03','09:00','Confirmed'),
+            (2,3,2,3,'2024-06-04','10:00','Pending'),
+            (3,4,1,2,'2024-06-05','11:00','Confirmed'),
+            (1,2,3,6,'2024-06-08','10:00','Pending'),
+            (4,5,1,1,'2024-06-10','09:00','Completed'),
+            (5,6,4,4,'2024-06-12','14:00','Pending'),
+            (2,3,2,5,'2024-06-14','10:00','Confirmed'),
+            (3,4,1,4,'2024-06-17','13:00','Cancelled');
+            """)
+
+# ─── DASHBOARD ────────────────────────────────────────────────
+@app.route("/")
+def dashboard():
+    db = get_db()
+    today = date.today().isoformat()
+    stats = {
+        "total":     db.execute("SELECT COUNT(*) FROM APPOINTMENT").fetchone()[0],
+        "today":     db.execute("SELECT COUNT(*) FROM APPOINTMENT WHERE appointment_date=?", (today,)).fetchone()[0],
+        "pending":   db.execute("SELECT COUNT(*) FROM APPOINTMENT WHERE status='Pending'").fetchone()[0],
+        "confirmed": db.execute("SELECT COUNT(*) FROM APPOINTMENT WHERE status='Confirmed'").fetchone()[0],
+        "completed": db.execute("SELECT COUNT(*) FROM APPOINTMENT WHERE status='Completed'").fetchone()[0],
+        "clients":   db.execute("SELECT COUNT(*) FROM CLIENT").fetchone()[0],
+        "vets":      db.execute("SELECT COUNT(*) FROM VETERINARIAN WHERE is_active=1").fetchone()[0],
+    }
+    upcoming = db.execute("""
+        SELECT a.appointment_id, a.appointment_date, a.appointment_time,
+               c.first_name||' '||c.last_name AS client_name,
+               p.pet_name, v.first_name||' '||v.last_name AS vet_name,
+               s.service_name, a.status
+        FROM APPOINTMENT a
+        JOIN CLIENT c ON a.client_id=c.client_id
+        JOIN PET p ON a.pet_id=p.pet_id
+        JOIN VETERINARIAN v ON a.vet_id=v.vet_id
+        JOIN SERVICE s ON a.service_id=s.service_id
+        ORDER BY a.appointment_date DESC, a.appointment_time
+        LIMIT 8
+    """).fetchall()
+    return render_template("dashboard.html", stats=stats, upcoming=upcoming, today=today)
+
+# ─── APPOINTMENTS ─────────────────────────────────────────────
+@app.route("/appointments")
+def appointments():
+    db = get_db()
+    status_filter = request.args.get("status", "")
+    date_filter   = request.args.get("date", "")
+    q = """
+        SELECT a.appointment_id, a.appointment_date, a.appointment_time,
+               c.first_name||' '||c.last_name AS client_name,
+               p.pet_name, p.species,
+               v.first_name||' '||v.last_name AS vet_name,
+               s.service_name, s.price, a.status, a.notes
+        FROM APPOINTMENT a
+        JOIN CLIENT c ON a.client_id=c.client_id
+        JOIN PET p ON a.pet_id=p.pet_id
+        JOIN VETERINARIAN v ON a.vet_id=v.vet_id
+        JOIN SERVICE s ON a.service_id=s.service_id
+        WHERE 1=1
+    """
+    params = []
+    if status_filter:
+        q += " AND a.status=?"; params.append(status_filter)
+    if date_filter:
+        q += " AND a.appointment_date=?"; params.append(date_filter)
+    q += " ORDER BY a.appointment_date DESC, a.appointment_time"
+    rows = db.execute(q, params).fetchall()
+    return render_template("appointments.html", appointments=rows,
+                           status_filter=status_filter, date_filter=date_filter)
+
+@app.route("/appointments/new", methods=["GET","POST"])
+def new_appointment():
+    db = get_db()
+    if request.method == "POST":
+        f = request.form
+        try:
+            db.execute("""
+                INSERT INTO APPOINTMENT (client_id,pet_id,vet_id,service_id,
+                    appointment_date,appointment_time,status,notes)
+                VALUES (?,?,?,?,?,?,?,?)
+            """, (f["client_id"], f["pet_id"], f["vet_id"], f["service_id"],
+                  f["appointment_date"], f["appointment_time"],
+                  f.get("status","Pending"), f.get("notes","")))
+            db.commit()
+            flash("Appointment booked successfully!", "success")
+            return redirect(url_for("appointments"))
+        except sqlite3.IntegrityError:
+            flash("That time slot is already taken for this vet. Please choose another.", "error")
+    clients  = db.execute("SELECT * FROM CLIENT ORDER BY last_name").fetchall()
+    vets     = db.execute("SELECT * FROM VETERINARIAN WHERE is_active=1 ORDER BY last_name").fetchall()
+    services = db.execute("SELECT * FROM SERVICE ORDER BY service_name").fetchall()
+    return render_template("appointment_form.html", clients=clients,
+                           vets=vets, services=services, appt=None)
+
+@app.route("/appointments/<int:id>/edit", methods=["GET","POST"])
+def edit_appointment(id):
+    db = get_db()
+    if request.method == "POST":
+        f = request.form
+        db.execute("""
+            UPDATE APPOINTMENT SET client_id=?,pet_id=?,vet_id=?,service_id=?,
+                appointment_date=?,appointment_time=?,status=?,notes=?
+            WHERE appointment_id=?
+        """, (f["client_id"], f["pet_id"], f["vet_id"], f["service_id"],
+              f["appointment_date"], f["appointment_time"],
+              f["status"], f.get("notes",""), id))
+        db.commit()
+        flash("Appointment updated.", "success")
+        return redirect(url_for("appointments"))
+    appt     = db.execute("SELECT * FROM APPOINTMENT WHERE appointment_id=?", (id,)).fetchone()
+    clients  = db.execute("SELECT * FROM CLIENT ORDER BY last_name").fetchall()
+    vets     = db.execute("SELECT * FROM VETERINARIAN WHERE is_active=1 ORDER BY last_name").fetchall()
+    services = db.execute("SELECT * FROM SERVICE ORDER BY service_name").fetchall()
+    pets     = db.execute("SELECT * FROM PET WHERE client_id=?", (appt["client_id"],)).fetchall()
+    return render_template("appointment_form.html", clients=clients, vets=vets,
+                           services=services, appt=appt, pets=pets)
+
+@app.route("/appointments/<int:id>/status", methods=["POST"])
+def update_status(id):
+    status = request.form["status"]
+    db = get_db()
+    db.execute("UPDATE APPOINTMENT SET status=? WHERE appointment_id=?", (status, id))
+    db.commit()
+    flash(f"Status updated to {status}.", "success")
+    return redirect(url_for("appointments"))
+
+@app.route("/appointments/<int:id>/delete", methods=["POST"])
+def delete_appointment(id):
+    db = get_db()
+    db.execute("DELETE FROM APPOINTMENT WHERE appointment_id=?", (id,))
+    db.commit()
+    flash("Appointment deleted.", "success")
+    return redirect(url_for("appointments"))
+
+# ─── CLIENTS ──────────────────────────────────────────────────
+@app.route("/clients")
+def clients():
+    db = get_db()
+    rows = db.execute("""
+        SELECT c.*, COUNT(p.pet_id) AS pet_count,
+               COUNT(a.appointment_id) AS appt_count
+        FROM CLIENT c
+        LEFT JOIN PET p ON c.client_id=p.client_id
+        LEFT JOIN APPOINTMENT a ON c.client_id=a.client_id
+        GROUP BY c.client_id ORDER BY c.last_name
+    """).fetchall()
+    return render_template("clients.html", clients=rows)
+
+@app.route("/clients/new", methods=["GET","POST"])
+def new_client():
+    if request.method == "POST":
+        f = request.form
+        db = get_db()
+        try:
+            db.execute("INSERT INTO CLIENT (first_name,last_name,contact_number,email,address) VALUES (?,?,?,?,?)",
+                       (f["first_name"],f["last_name"],f["contact_number"],f["email"],f.get("address","")))
+            db.commit()
+            flash("Client added.", "success")
+            return redirect(url_for("clients"))
+        except sqlite3.IntegrityError:
+            flash("Email already exists.", "error")
+    return render_template("client_form.html", client=None)
+
+@app.route("/clients/<int:id>/edit", methods=["GET","POST"])
+def edit_client(id):
+    db = get_db()
+    if request.method == "POST":
+        f = request.form
+        db.execute("UPDATE CLIENT SET first_name=?,last_name=?,contact_number=?,email=?,address=? WHERE client_id=?",
+                   (f["first_name"],f["last_name"],f["contact_number"],f["email"],f.get("address",""),id))
+        db.commit()
+        flash("Client updated.", "success")
+        return redirect(url_for("clients"))
+    client = db.execute("SELECT * FROM CLIENT WHERE client_id=?", (id,)).fetchone()
+    return render_template("client_form.html", client=client)
+
+# ─── VETS ─────────────────────────────────────────────────────
+@app.route("/vets")
+def vets():
+    db = get_db()
+    rows = db.execute("""
+        SELECT v.*, COUNT(a.appointment_id) AS appt_count
+        FROM VETERINARIAN v
+        LEFT JOIN APPOINTMENT a ON v.vet_id=a.vet_id
+        GROUP BY v.vet_id ORDER BY v.last_name
+    """).fetchall()
+    schedules = db.execute("SELECT * FROM VET_SCHEDULE ORDER BY vet_id, day_of_week").fetchall()
+    return render_template("vets.html", vets=rows, schedules=schedules)
+
+# ─── SERVICES ─────────────────────────────────────────────────
+@app.route("/services")
+def services():
+    db = get_db()
+    rows = db.execute("SELECT * FROM SERVICE ORDER BY service_name").fetchall()
+    return render_template("services.html", services=rows)
+
+# ─── AJAX: get pets by client ─────────────────────────────────
+@app.route("/api/pets/<int:client_id>")
+def api_pets(client_id):
+    db = get_db()
+    pets = db.execute("SELECT pet_id, pet_name, species FROM PET WHERE client_id=?", (client_id,)).fetchall()
+    return jsonify([dict(p) for p in pets])
+
+if __name__ == "__main__":
+    init_db()
+    app.run(debug=True)

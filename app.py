@@ -6,7 +6,7 @@ app = Flask(__name__)
 app.secret_key = "petclinic_secret_2024"
 DB = "petclinic.db"
 
-# ─── DB HELPERS ───────────────────────────────────────────────
+# DB
 def get_db():
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
@@ -76,7 +76,7 @@ def init_db():
             UNIQUE (vet_id, appointment_date, appointment_time)
         );
         """)
-        # Seed only if empty
+       
         if conn.execute("SELECT COUNT(*) FROM CLIENT").fetchone()[0] == 0:
             conn.executescript("""
             INSERT INTO CLIENT (first_name,last_name,contact_number,email,address) VALUES
@@ -133,7 +133,7 @@ def init_db():
             (3,4,1,4,'2024-06-17','13:00','Cancelled');
             """)
 
-# ─── DASHBOARD ────────────────────────────────────────────────
+#DASHBOARD 
 @app.route("/")
 def dashboard():
     db = get_db()
@@ -162,7 +162,7 @@ def dashboard():
     """).fetchall()
     return render_template("dashboard.html", stats=stats, upcoming=upcoming, today=today)
 
-# ─── APPOINTMENTS ─────────────────────────────────────────────
+# APPOINTMENTS 
 @app.route("/appointments")
 def appointments():
     db = get_db()
@@ -255,7 +255,7 @@ def delete_appointment(id):
     flash("Appointment deleted.", "success")
     return redirect(url_for("appointments"))
 
-# ─── CLIENTS ──────────────────────────────────────────────────
+#  CLIENTS 
 @app.route("/clients")
 def clients():
     db = get_db()
@@ -297,7 +297,7 @@ def edit_client(id):
     client = db.execute("SELECT * FROM CLIENT WHERE client_id=?", (id,)).fetchone()
     return render_template("client_form.html", client=client)
 
-# ─── VETS ─────────────────────────────────────────────────────
+# VETS 
 @app.route("/vets")
 def vets():
     db = get_db()
@@ -310,14 +310,14 @@ def vets():
     schedules = db.execute("SELECT * FROM VET_SCHEDULE ORDER BY vet_id, day_of_week").fetchall()
     return render_template("vets.html", vets=rows, schedules=schedules)
 
-# ─── SERVICES ─────────────────────────────────────────────────
+# SERVICES
 @app.route("/services")
 def services():
     db = get_db()
     rows = db.execute("SELECT * FROM SERVICE ORDER BY service_name").fetchall()
     return render_template("services.html", services=rows)
 
-# ─── AJAX: get pets by client ─────────────────────────────────
+
 @app.route("/api/pets/<int:client_id>")
 def api_pets(client_id):
     db = get_db()

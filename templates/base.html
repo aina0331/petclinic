@@ -34,7 +34,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans',sans-serif;background:var(--gray-50);color:var(--gray-800);min-height:100vh;display:flex}
 
-/* ── SIDEBAR ── */
+/* sidebar */
 .sidebar{width:240px;min-height:100vh;background: #f5f0e8;display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100}
 .sidebar-logo{padding:28px 24px 20px;border-bottom:1px solid rgba(255,255,255,.07)}
 .sidebar-logo .paw{font-size:28px;margin-bottom:4px}
@@ -47,7 +47,7 @@ nav a.active{background:#c8b89a;color:#3b2f20}
 nav a .icon{font-size:16px;width:20px;text-align:center}
 .sidebar-footer{padding:16px 24px;border-top:1px solid rgba(0,0,0,.1);font-size:12px;color:#a89880}
 
-/* ── MAIN ── */
+/* main */
 .main{margin-left:240px;flex:1;padding:32px;max-width:1200px;width:calc(100% - 240px)}
 .page-header{margin-bottom:28px}
 .page-header h2{font-family:'DM Serif Display',serif;font-size:28px;color:var(--gray-900);margin-bottom:4px}
@@ -55,13 +55,13 @@ nav a .icon{font-size:16px;width:20px;text-align:center}
 .page-header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
 .page-header-row h2{font-family:'DM Serif Display',serif;font-size:28px;color:var(--gray-900)}
 
-/* ── CARDS ── */
+/* card */
 .card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--gray-200);overflow:hidden}
 .card-header{padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between}
 .card-header h3{font-size:15px;font-weight:600;color:var(--gray-800)}
 .card-body{padding:20px 24px 24px}
 
-/* ── STAT CARDS ── */
+/* stat card*/
 .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
 .stat-card{background:var(--white);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border:1px solid var(--gray-200)}
 .stat-card .label{font-size:12px;font-weight:500;color:var(--gray-600);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
@@ -72,7 +72,7 @@ nav a .icon{font-size:16px;width:20px;text-align:center}
 .stat-card.green .value{color:var(--green)}
 .stat-card.blue  .value{color:var(--blue)}
 
-/* ── TABLE ── */
+/* tbl */
 .table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
 th{text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-600);padding:10px 16px;background:var(--gray-50);border-bottom:1px solid var(--gray-200)}
@@ -80,7 +80,7 @@ td{padding:13px 16px;border-bottom:1px solid var(--gray-100);font-size:14px;vert
 tr:last-child td{border-bottom:none}
 tr:hover td{background:var(--gray-50)}
 
-/* ── BADGES ── */
+/* badge*/
 .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:500}
 .badge::before{content:'';width:6px;height:6px;border-radius:50%}
 .badge.pending  {background:var(--amber-l);color:#92400e}.badge.pending::before{background:var(--amber)}
@@ -88,14 +88,14 @@ tr:hover td{background:var(--gray-50)}
 .badge.completed{background:var(--green-l);color:#166534}.badge.completed::before{background:var(--green)}
 .badge.cancelled{background:var(--red-l);color:#991b1b}.badge.cancelled::before{background:var(--red)}
 
-/* ── BUTTONS ── */
+/* btn */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:none;text-decoration:none;transition:all .15s;font-family:'DM Sans',sans-serif}
 .btn-primary{background:var(--teal);color:var(--white)}.btn-primary:hover{background:var(--teal-l)}
 .btn-ghost{background:transparent;color:var(--gray-600);border:1px solid var(--gray-200)}.btn-ghost:hover{background:var(--gray-100)}
 .btn-danger{background:var(--red-l);color:var(--red)}.btn-danger:hover{background:#fecaca}
 .btn-sm{padding:5px 12px;font-size:13px}
 
-/* ── FORMS ── */
+/* form*/
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .form-group{display:flex;flex-direction:column;gap:6px}
 .form-group.full{grid-column:1/-1}
@@ -104,22 +104,22 @@ input,select,textarea{padding:9px 12px;border:1px solid var(--gray-200);border-r
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--teal-l);box-shadow:0 0 0 3px rgba(20,184,166,.12)}
 textarea{resize:vertical;min-height:80px}
 
-/* ── FILTERS ── */
+/*filter*/
 .filter-bar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
 .filter-bar input,.filter-bar select{width:auto;flex:1;min-width:140px;max-width:200px}
 
-/* ── FLASH ── */
+/* flash */
 .flash{padding:12px 16px;border-radius:8px;font-size:14px;margin-bottom:20px}
 .flash.success{background:var(--green-l);color:#166534;border-left:4px solid var(--green)}
 .flash.error  {background:var(--red-l);  color:#991b1b;border-left:4px solid var(--red)}
 
-/* ── ACTIONS CELL ── */
+/* action */
 .actions{display:flex;gap:6px}
 .action-btn{padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:none;text-decoration:none;transition:all .15s;font-family:'DM Sans',sans-serif}
 .action-edit{background:var(--blue-l);color:var(--blue)}.action-edit:hover{background:#bfdbfe}
 .action-del {background:var(--red-l);color:var(--red)}.action-del:hover{background:#fecaca}
 
-/* ── MODAL ── */
+/* modql*/
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.4);z-index:200;align-items:center;justify-content:center}
 .modal-overlay.open{display:flex}
 .modal{background:var(--white);border-radius:var(--radius);padding:28px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.18)}

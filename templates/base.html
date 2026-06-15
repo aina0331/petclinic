@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{% block title %}PetClinic{% endblock %} — PawCare System</title>
+<title>{% block title %}PawPatrol Clinic{% endblock %} — PawPatrol Clinic System</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -35,17 +35,17 @@
 body{font-family:'DM Sans',sans-serif;background:var(--gray-50);color:var(--gray-800);min-height:100vh;display:flex}
 
 /* ── SIDEBAR ── */
-.sidebar{width:240px;min-height:100vh;background:var(--gray-900);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100}
+.sidebar{width:240px;min-height:100vh;background: #f5f0e8;display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100}
 .sidebar-logo{padding:28px 24px 20px;border-bottom:1px solid rgba(255,255,255,.07)}
 .sidebar-logo .paw{font-size:28px;margin-bottom:4px}
-.sidebar-logo h1{font-family:'DM Serif Display',serif;font-size:20px;color:var(--white);line-height:1.2}
-.sidebar-logo span{font-size:11px;color:var(--teal-l);letter-spacing:.08em;text-transform:uppercase}
+.sidebar-logo h1{font-family:'DM Serif Display',serif;font-size:20px;color:#3b2f20;line-height:1.2}
+.sidebar-logo span{font-size:11px;color:#a89880;letter-spacing:.08em;text-transform:uppercase;text-decoration:none}
 nav{flex:1;padding:16px 12px}
-nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:rgba(255,255,255,.6);text-decoration:none;font-size:14px;font-weight:500;margin-bottom:2px;transition:all .15s}
-nav a:hover{background:rgba(255,255,255,.07);color:var(--white)}
-nav a.active{background:var(--teal);color:var(--white)}
+nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#5a4f3f;text-decoration:none;}
+nav a:hover{background:rgba(0,0,0,.08);color:#3b2f20}
+nav a.active{background:#c8b89a;color:#3b2f20}
 nav a .icon{font-size:16px;width:20px;text-align:center}
-.sidebar-footer{padding:16px 24px;border-top:1px solid rgba(255,255,255,.07);font-size:12px;color:rgba(255,255,255,.35)}
+.sidebar-footer{padding:16px 24px;border-top:1px solid rgba(0,0,0,.1);font-size:12px;color:#a89880}
 
 /* ── MAIN ── */
 .main{margin-left:240px;flex:1;padding:32px;max-width:1200px;width:calc(100% - 240px)}
@@ -137,9 +137,9 @@ textarea{resize:vertical;min-height:80px}
 
 <aside class="sidebar">
   <div class="sidebar-logo">
-    <div class="paw">🐾</div>
-    <h1>PawCare</h1>
-    <span>Clinic System</span>
+    <div class="paw">🐾🚨</div>
+    <h1>PawPatrol</h1>
+    <span>PawPatrol Clinic System</span>
   </div>
   <nav>
     <a href="{{ url_for('dashboard') }}"    class="{% if request.endpoint=='dashboard' %}active{% endif %}"><span class="icon">⬛</span> Dashboard</a>
@@ -148,7 +148,7 @@ textarea{resize:vertical;min-height:80px}
     <a href="{{ url_for('vets') }}"         class="{% if request.endpoint=='vets' %}active{% endif %}"><span class="icon">🩺</span> Veterinarians</a>
     <a href="{{ url_for('services') }}"     class="{% if request.endpoint=='services' %}active{% endif %}"><span class="icon">💊</span> Services</a>
   </nav>
-  <div class="sidebar-footer">Pet Clinic v1.0</div>
+  <div class="sidebar-footer">PawPatrol Clinic System</div>
 </aside>
 
 <main class="main">

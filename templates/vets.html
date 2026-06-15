@@ -16,7 +16,7 @@
       <tbody>
       {% for v in vets %}
       <tr>
-        <td style="color:var(--gray-400);font-size:12px">{{ v.vet_id }}</td>
+        <td style="color:var(--gray-400);font-size:12px">{{ loop.index }}</td>
         <td><b>Dr. {{ v.first_name }} {{ v.last_name }}</b></td>
         <td>{{ v.specialization or '—' }}</td>
         <td>{{ v.contact_number }}</td>

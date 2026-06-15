@@ -15,7 +15,7 @@
       <tbody>
       {% for s in services %}
       <tr>
-        <td style="color:var(--gray-400);font-size:12px">{{ s.service_id }}</td>
+      <td style="color:var(--gray-400);font-size:12px">{{ loop.index }}</td>
         <td><b>{{ s.service_name }}</b></td>
         <td style="color:var(--gray-600)">{{ s.description or '—' }}</td>
         <td>{{ s.duration_minutes }} min</td>

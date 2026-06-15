@@ -90,7 +90,11 @@ def init_db():
             ('Ricardo','Santos','General Practice','09171110001'),
             ('Elena','Cruz','Dental Care','09171110002'),
             ('Marco','Bautista','Surgery','09171110003'),
-            ('Lisa','Torres','Dermatology','09171110004');
+            ('Lisa','Torres','Dermatology','09171110004'),
+            ('Jose','Ramos','Emergency & Critical Care','09171110005'),
+            ('Anna','Villanueva','Internal Medicine','09171110006'),
+            ('Miguel','Flores','Oncology','09171110007'),
+            ('Sofia','Reyes','Ophthalmology','09171110008');
 
             INSERT INTO VET_SCHEDULE (vet_id,day_of_week,start_time,end_time) VALUES
             (1,'MON','08:00','17:00'),(1,'WED','08:00','17:00'),(1,'FRI','08:00','17:00'),
@@ -104,7 +108,11 @@ def init_db():
             ('Dental Cleaning','Teeth cleaning and oral inspection',60,1500.00),
             ('Grooming','Full bath, trim, and styling',90,800.00),
             ('Deworming','Oral deworming treatment',15,250.00),
-            ('Surgical Consult','Pre/post-operative consultation',45,1000.00);
+            ('Surgical Consult','Pre/post-operative consultation',45,1000.00),
+            ('Emergency Care','Immediate treatment for life-threatening conditions',60,2000.00),
+            ('Internal Medicine Consult','Diagnosis and treatment of complex internal diseases',45,1200.00),
+            ('Oncology Consult','Cancer diagnosis and treatment planning',60,1500.00),
+            ('Eye Examination','Comprehensive eye check and disease treatment',30,800.00);
 
             INSERT INTO PET (client_id,pet_name,species,breed,age,weight_kg) VALUES
             (1,'Doggo','Dog','Labrador',3,25.50),

@@ -94,7 +94,7 @@ def init_db():
             ('Jose','Ramos','Emergency & Critical Care','09171110005'),
             ('Anna','Villanueva','Internal Medicine','09171110006'),
             ('Miguel','Flores','Oncology','09171110007'),
-            ('Sofia','Reyes','Ophthalmology','09171110008');
+            ('Sofia','Reyes','Ophthalmology','09171110008'),
             ('Maria','Santos','Emergency & Critical Care','09171110009');
 
             INSERT INTO VET_SCHEDULE (vet_id,day_of_week,start_time,end_time) VALUES
@@ -347,12 +347,11 @@ def delete_appointment(id):
 def clients():
     db = get_db()
     rows = db.execute("""
-        SELECT c.*, COUNT(p.pet_id) AS pet_count,
-               COUNT(a.appointment_id) AS appt_count
-        FROM CLIENT c
-        LEFT JOIN PET p ON c.client_id=p.client_id
-        LEFT JOIN APPOINTMENT a ON c.client_id=a.client_id
-        GROUP BY c.client_id ORDER BY c.last_name
+    SELECT c.*,
+           (SELECT COUNT(*) FROM PET p WHERE p.client_id = c.client_id) AS pet_count,
+           (SELECT COUNT(*) FROM APPOINTMENT a WHERE a.client_id = c.client_id) AS appt_count
+    FROM CLIENT c
+    ORDER BY c.last_name
     """).fetchall()
     return render_template("clients.html", clients=rows)
 
@@ -365,8 +364,9 @@ def new_client():
             db.execute("INSERT INTO CLIENT (first_name,last_name,contact_number,email,address) VALUES (?,?,?,?,?)",
                        (f["first_name"],f["last_name"],f["contact_number"],f["email"],f.get("address","")))
             db.commit()
-            flash("Client added.", "success")
-            return redirect(url_for("clients"))
+            new_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
+            flash("Client added! Now add their pet.", "success")
+            return redirect(url_for("new_pet", client_id=new_id))
         except sqlite3.IntegrityError:
             flash("Email already exists.", "error")
     return render_template("client_form.html", client=None)
@@ -391,6 +391,96 @@ def edit_client(id):
         return redirect(url_for("clients"))
     client = db.execute("SELECT * FROM CLIENT WHERE client_id=?", (id,)).fetchone()
     return render_template("client_form.html", client=client)
+
+# PETS
+@app.route("/pets")
+def pets():
+    db = get_db()
+    search        = request.args.get("search", "").strip()
+    species_filter = request.args.get("species", "").strip()
+    client_id_filter = request.args.get("client_id", "").strip()
+
+    q = """
+        SELECT p.*,
+               c.first_name||' '||c.last_name AS owner_name,
+               c.email, c.client_id,
+               COUNT(a.appointment_id) AS appt_count
+        FROM PET p
+        JOIN CLIENT c ON p.client_id = c.client_id
+        LEFT JOIN APPOINTMENT a ON p.pet_id = a.pet_id
+        WHERE 1=1
+    """
+    params = []
+    if search:
+        q += " AND p.pet_name LIKE ?"; params.append(f"%{search}%")
+    if species_filter:
+        q += " AND p.species = ?"; params.append(species_filter)
+    if client_id_filter:
+        q += " AND p.client_id = ?"; params.append(client_id_filter)
+    q += " GROUP BY p.pet_id ORDER BY p.pet_name"
+    rows = db.execute(q, params).fetchall()
+
+    species_list = [r[0] for r in db.execute(
+        "SELECT DISTINCT species FROM PET ORDER BY species").fetchall()]
+
+    # If filtering by client, pass owner name for breadcrumb
+    owner = None
+    if client_id_filter:
+        owner = db.execute(
+            "SELECT first_name||' '||last_name AS name FROM CLIENT WHERE client_id=?",
+            (client_id_filter,)).fetchone()
+
+    return render_template("pets.html", pets=rows,
+                           search=search, species_filter=species_filter,
+                           species_list=species_list, owner=owner,
+                           client_id_filter=client_id_filter)
+
+@app.route("/pets/new", methods=["GET", "POST"])
+def new_pet():
+    db = get_db()
+    preselect_client = request.args.get("client_id", type=int)
+    if request.method == "POST":
+        f = request.form
+        db.execute(
+            "INSERT INTO PET (client_id,pet_name,species,breed,age,weight_kg) VALUES (?,?,?,?,?,?)",
+            (f["client_id"], f["pet_name"], f["species"],
+             f.get("breed") or None,
+             f.get("age") or None,
+             f.get("weight_kg") or None))
+        db.commit()
+        flash("Pet added successfully!", "success")
+        return redirect(url_for("pets"))
+    clients = db.execute("SELECT * FROM CLIENT ORDER BY last_name").fetchall()
+    return render_template("pet_form.html", pet=None, clients=clients,
+                           preselect_client=preselect_client)
+
+@app.route("/pets/<int:id>/edit", methods=["GET", "POST"])
+def edit_pet(id):
+    db = get_db()
+    if request.method == "POST":
+        f = request.form
+        db.execute(
+            """UPDATE PET SET client_id=?,pet_name=?,species=?,breed=?,age=?,weight_kg=?
+               WHERE pet_id=?""",
+            (f["client_id"], f["pet_name"], f["species"],
+             f.get("breed") or None,
+             f.get("age") or None,
+             f.get("weight_kg") or None, id))
+        db.commit()
+        flash("Pet updated.", "success")
+        return redirect(url_for("pets"))
+    pet     = db.execute("SELECT * FROM PET WHERE pet_id=?", (id,)).fetchone()
+    clients = db.execute("SELECT * FROM CLIENT ORDER BY last_name").fetchall()
+    return render_template("pet_form.html", pet=pet, clients=clients,
+                           preselect_client=None)
+
+@app.route("/pets/<int:id>/delete", methods=["POST"])
+def delete_pet(id):
+    db = get_db()
+    db.execute("DELETE FROM PET WHERE pet_id=?", (id,))
+    db.commit()
+    flash("Pet deleted.", "success")
+    return redirect(url_for("pets"))
 
 # VETS 
 @app.route("/vets")
@@ -436,6 +526,30 @@ def next_month_filter(month_str):
         month = 1
         year += 1
     return f"{year}-{month:02d}"
+
+@app.route("/api/vet/<int:vet_id>/services")
+def api_vet_services(vet_id):
+    db = get_db()
+    vet = db.execute("SELECT specialization FROM VETERINARIAN WHERE vet_id=?", (vet_id,)).fetchone()
+    if not vet:
+        return jsonify([])
+    
+    spec = vet["specialization"]
+    mapping = {
+        "General Practice":         ["General Checkup", "Vaccination", "Deworming"],
+        "Dental Care":              ["Dental Cleaning"],
+        "Surgery":                  ["Surgical Consult"],
+        "Dermatology":              ["General Checkup"],
+        "Emergency & Critical Care":["Emergency Care"],
+        "Internal Medicine":        ["Internal Medicine Consult"],
+        "Oncology":                 ["Oncology Consult"],
+        "Ophthalmology":            ["Eye Examination"],
+    }
+    allowed = mapping.get(spec, [])
+    services = db.execute(
+        "SELECT * FROM SERVICE WHERE service_name IN ({})".format(
+            ",".join("?" * len(allowed))), allowed).fetchall()
+    return jsonify([dict(s) for s in services])
 
 if __name__ == "__main__":
     init_db()

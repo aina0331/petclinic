@@ -12,6 +12,7 @@
       <thead><tr>
         <th>#</th><th>Name</th><th>Email</th><th>Contact</th>
         <th>Address</th><th>Pets</th><th>Bookings</th><th>Actions</th>
+
       </tr></thead>
       <tbody>
       {% for c in clients %}
@@ -21,10 +22,16 @@
         <td>{{ c.email }}</td>
         <td>{{ c.contact_number }}</td>
         <td>{{ c.address or '—' }}</td>
-        <td>{{ c.pet_count }}</td>
+        <td>
+          <a href="{{ url_for('pets', client_id=c.client_id) }}"
+             style="color:var(--teal);text-decoration:none;font-weight:500">
+            {{ c.pet_count }} pet{{ 's' if c.pet_count != 1 else '' }}
+          </a>
+        </td>
         <td>{{ c.appt_count }}</td>
         <td>
           <div class="actions">
+            <a href="{{ url_for('pets', client_id=c.client_id) }}" class="action-btn" style="background:var(--teal-xl);color:var(--teal)">🐾 Pets</a>
             <a href="{{ url_for('edit_client', id=c.client_id) }}" class="action-btn action-edit">Edit</a>
             <form method="POST" action="{{ url_for('delete_client', id=c.client_id) }}" onsubmit="return confirm('Delete this client? This will also remove their pets and appointments.')">
               <button type="submit" class="action-btn action-del">Delete</button>

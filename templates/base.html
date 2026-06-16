@@ -56,7 +56,7 @@ nav a .icon{font-size:16px;width:20px;text-align:center}
 .page-header-row h2{font-family:'DM Serif Display',serif;font-size:28px;color:var(--gray-900)}
 
 /* card */
-.card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--gray-200);overflow:hidden}
+.card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--gray-200);overflow:visible}
 .card-header{padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between}
 .card-header h3{font-size:15px;font-weight:600;color:var(--gray-800)}
 .card-body{padding:20px 24px 24px}
@@ -131,6 +131,11 @@ textarea{resize:vertical;min-height:80px}
   .stat-grid{grid-template-columns:1fr 1fr}
   .form-grid{grid-template-columns:1fr}
 }
+
+.choices__list--dropdown {
+  max-height: 350px !important;
+  overflow-y: scroll !important;
+}
 </style>
 </head>
 <body>
@@ -145,6 +150,7 @@ textarea{resize:vertical;min-height:80px}
     <a href="{{ url_for('dashboard') }}"    class="{% if request.endpoint=='dashboard' %}active{% endif %}"><span class="icon">⬛</span> Dashboard</a>
     <a href="{{ url_for('appointments') }}" class="{% if 'appointment' in request.endpoint %}active{% endif %}"><span class="icon">📅</span> Appointments</a>
     <a href="{{ url_for('clients') }}"      class="{% if 'client' in request.endpoint %}active{% endif %}"><span class="icon">👤</span> Clients</a>
+    <a href="{{ url_for('pets') }}"         class="{% if 'pet' in request.endpoint %}active{% endif %}"><span class="icon">🐾</span> Pets</a>
     <a href="{{ url_for('vets') }}"         class="{% if request.endpoint=='vets' %}active{% endif %}"><span class="icon">🩺</span> Veterinarians</a>
     <a href="{{ url_for('services') }}"     class="{% if request.endpoint=='services' %}active{% endif %}"><span class="icon">💊</span> Services</a>
   </nav>

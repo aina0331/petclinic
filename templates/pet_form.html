@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if pet else 'New' }} Pet{% endblock %}
+{% block content %}
+<div class="page-header-row">
+  <h2>{{ 'Edit Pet' if pet else 'Add New Pet' }}</h2>
+  <a href="{{ url_for('pets') }}" class="btn btn-ghost">← Back to Pets</a>
+</div>
+
+<div class="card" style="max-width:640px">
+  <div class="card-body">
+    <form method="POST">
+
+      <p style="font-size:13px;font-weight:600;color:var(--gray-600);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px">
+        Fur Parent (Owner)
+      </p>
+      <div class="form-grid" style="margin-bottom:24px">
+        <div class="form-group full">
+          <label>Select Owner *</label>
+          <select name="client_id" required>
+            <option value="">— Choose a client —</option>
+            {% for c in clients %}
+            <option value="{{ c.client_id }}"
+              {% if pet and pet.client_id == c.client_id %}selected
+              {% elif preselect_client == c.client_id %}selected{% endif %}>
+              {{ c.first_name }} {{ c.last_name }} ({{ c.email }})
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <p style="font-size:13px;font-weight:600;color:var(--gray-600);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px">
+        Pet Information
+      </p>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Pet Name *</label>
+          <input type="text" name="pet_name" required value="{{ pet.pet_name if pet else '' }}">
+        </div>
+        <div class="form-group">
+          <label>Species *</label>
+          <select name="species" required>
+            <option value="">— Select species —</option>
+            {% for s in ['Dog','Cat','Bird','Fish','Rabbit','Hamster','Reptile','Other'] %}
+            <option value="{{ s }}" {% if pet and pet.species == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Breed</label>
+          <input type="text" name="breed" value="{{ pet.breed if pet else '' }}" placeholder="e.g. Labrador, Persian…">
+        </div>
+        <div class="form-group">
+          <label>Age (years)</label>
+          <input type="number" name="age" min="0" max="50" value="{{ pet.age if pet else '' }}">
+        </div>
+        <div class="form-group">
+          <label>Weight (kg)</label>
+          <input type="number" name="weight_kg" step="0.01" min="0" value="{{ pet.weight_kg if pet else '' }}">
+        </div>
+      </div>
+
+      <div style="margin-top:24px;display:flex;gap:10px">
+        <button type="submit" class="btn btn-primary">{{ 'Save Changes' if pet else 'Add Pet' }}</button>
+        <a href="{{ url_for('pets') }}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

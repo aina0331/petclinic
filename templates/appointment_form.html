@@ -8,12 +8,13 @@
 
 <div class="card">
   <div class="card-body">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
     <form method="POST">
       <div class="form-grid">
 
         <div class="form-group">
           <label>Client *</label>
-          <select name="client_id" id="clientSelect" required onchange="loadPets(this.value)">
+          <select name="client_id" id="clientSelect" required>
             <option value="">Select client…</option>
             {% for c in clients %}
             <option value="{{ c.client_id }}" {% if appt and appt.client_id==c.client_id %}selected{% endif %}>
@@ -39,7 +40,7 @@
 
         <div class="form-group">
           <label>Veterinarian *</label>
-          <select name="vet_id" required>
+          <select name="vet_id" id="vetSelect" required>
             <option value="">Select vet…</option>
             {% for v in vets %}
             <option value="{{ v.vet_id }}" {% if appt and appt.vet_id==v.vet_id %}selected{% endif %}>
@@ -51,7 +52,7 @@
 
         <div class="form-group">
           <label>Service *</label>
-          <select name="service_id" required>
+          <select name="service_id" id="serviceSelect" required>
             <option value="">Select service…</option>
             {% for s in services %}
             <option value="{{ s.service_id }}" {% if appt and appt.service_id==s.service_id %}selected{% endif %}>
@@ -106,6 +107,14 @@
   </div>
 </div>
 
+<style>
+  .choices__list--dropdown {
+    max-height: 350px;
+    overflow-y: scroll;
+  }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 <script>
 function loadPets(clientId) {
   const sel = document.getElementById('petSelect');
@@ -120,5 +129,38 @@ function loadPets(clientId) {
       });
     });
 }
+
+function loadServices(vetId) {
+  const sel = document.getElementById('serviceSelect');
+  sel.innerHTML = '<option>Loading...</option>';
+  if (!vetId) { sel.innerHTML = '<option value="">Select service…</option>'; return; }
+  fetch(`/api/vet/${vetId}/services`)
+    .then(r => r.json())
+    .then(services => {
+      sel.innerHTML = '<option value="">Select service…</option>';
+      services.forEach(s => {
+        sel.innerHTML += `<option value="${s.service_id}">${s.service_name} — ₱${s.price.toFixed(2)}</option>`;
+      });
+    });
+}
+
+new Choices(document.getElementById('clientSelect'), {
+  searchEnabled: true,
+  searchPlaceholderValue: 'Type to search client...',
+  itemSelectText: '',
+});
+
+new Choices(document.getElementById('vetSelect'), {
+  searchEnabled: true,
+  searchPlaceholderValue: 'Type to search vet...',
+  itemSelectText: '',
+});
+
+document.getElementById('clientSelect').addEventListener('change', function() {
+  loadPets(this.value);
+});
+document.getElementById('vetSelect').addEventListener('change', function() {
+  loadServices(this.value);
+});
 </script>
 {% endblock %}

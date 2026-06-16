@@ -39,16 +39,18 @@
   <div class="card-header"><h3>Weekly Schedules</h3></div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Veterinarian</th><th>Day</th><th>Start</th><th>End</th></tr></thead>
+      <thead><tr><th>Veterinarian</th><th>Specialization</th><th>Days</th><th>Time</th></tr></thead>
       <tbody>
-      {% for s in schedules %}
-      {% set vet = vets|selectattr('vet_id','equalto',s.vet_id)|first %}
-      <tr>
-        <td>Dr. {{ vet.first_name }} {{ vet.last_name }}</td>
-        <td>{{ s.day_of_week }}</td>
-        <td>{{ s.start_time }}</td>
-        <td>{{ s.end_time }}</td>
-      </tr>
+      {% for v in vets %}
+        {% set vet_schedules = schedules|selectattr('vet_id','equalto',v.vet_id)|list %}
+        {% if vet_schedules %}
+        <tr>
+          <td><b>Dr. {{ v.first_name }} {{ v.last_name }}</b></td>
+          <td>{{ v.specialization or '—' }}</td>
+          <td>{{ vet_schedules|map(attribute='day_of_week')|join(', ') }}</td>
+          <td>{{ vet_schedules[0].start_time }} – {{ vet_schedules[0].end_time }}</td>
+        </tr>
+        {% endif %}
       {% endfor %}
       </tbody>
     </table>

@@ -16,7 +16,7 @@
       <tbody>
       {% for c in clients %}
       <tr>
-        <td style="color:var(--gray-400);font-size:12px">{{ c.client_id }}</td>
+        <td style="color:var(--gray-400);font-size:12px">{{ loop.index }}</td>
         <td><b>{{ c.first_name }} {{ c.last_name }}</b></td>
         <td>{{ c.email }}</td>
         <td>{{ c.contact_number }}</td>
@@ -26,6 +26,9 @@
         <td>
           <div class="actions">
             <a href="{{ url_for('edit_client', id=c.client_id) }}" class="action-btn action-edit">Edit</a>
+            <form method="POST" action="{{ url_for('delete_client', id=c.client_id) }}" onsubmit="return confirm('Delete this client? This will also remove their pets and appointments.')">
+              <button type="submit" class="action-btn action-del">Delete</button>
+            </form>
           </div>
         </td>
       </tr>

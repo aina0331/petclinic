@@ -95,12 +95,20 @@ def init_db():
             ('Anna','Villanueva','Internal Medicine','09171110006'),
             ('Miguel','Flores','Oncology','09171110007'),
             ('Sofia','Reyes','Ophthalmology','09171110008');
+            ('Maria','Santos','Emergency & Critical Care','09171110009');
 
             INSERT INTO VET_SCHEDULE (vet_id,day_of_week,start_time,end_time) VALUES
             (1,'MON','08:00','17:00'),(1,'WED','08:00','17:00'),(1,'FRI','08:00','17:00'),
             (2,'TUE','09:00','18:00'),(2,'THU','09:00','18:00'),
             (3,'MON','10:00','16:00'),(3,'SAT','08:00','12:00'),
-            (4,'WED','13:00','20:00'),(4,'FRI','13:00','20:00');
+            (4,'WED','13:00','20:00'),(4,'FRI','13:00','20:00'),
+            (5,'MON','08:00','20:00'),(5,'TUE','08:00','20:00'),(5,'WED','08:00','20:00'),
+            (5,'THU','08:00','20:00'),(5,'FRI','08:00','20:00'),(5,'SAT','08:00','20:00'),(5,'SUN','08:00','20:00'),
+            (6,'MON','08:00','17:00'),(6,'WED','08:00','17:00'),(6,'FRI','08:00','17:00'),
+            (7,'TUE','09:00','17:00'),(7,'THU','09:00','17:00'),
+            (8,'MON','10:00','18:00'),(8,'FRI','10:00','18:00');
+            (9,'MON','20:00','08:00'),(9,'TUE','20:00','08:00'),(9,'WED','20:00','08:00'),
+            (9,'THU','20:00','08:00'),(9,'FRI','20:00','08:00'),(9,'SAT','20:00','08:00'),(9,'SUN','20:00','08:00');
 
             INSERT INTO SERVICE (service_name,description,duration_minutes,price) VALUES
             ('General Checkup','Routine health examination',30,500.00),
@@ -162,12 +170,157 @@ def dashboard():
     """).fetchall()
     return render_template("dashboard.html", stats=stats, upcoming=upcoming, today=today)
 
-# APPOINTMENTS 
 @app.route("/appointments")
 def appointments():
     db = get_db()
     status_filter = request.args.get("status", "")
     date_filter   = request.args.get("date", "")
+    month_str     = request.args.get("month", date.today().strftime("%Y-%m"))
+
+    from calendar import monthrange
+    year, month = map(int, month_str.split("-"))
+    days_in_month = monthrange(year, month)[1]
+
+    appt_counts = {}
+    rows = db.execute("""
+        SELECT appointment_date, COUNT(*) as cnt
+        FROM APPOINTMENT
+        WHERE strftime('%Y-%m', appointment_date) = ?
+        AND vet_id NOT IN (5, 9)
+        GROUP BY appointment_date
+    """, (month_str,)).fetchall()
+    for r in rows:
+        appt_counts[r["appointment_date"]] = r["cnt"]
+
+    vet_schedules = db.execute("""
+        SELECT vs.day_of_week, vs.vet_id, vs.start_time, vs.end_time
+        FROM VET_SCHEDULE vs
+        WHERE vs.vet_id NOT IN (5, 9)
+    """).fetchall()
+
+    def calc_slots(start, end):
+        fmt = "%H:%M"
+        s = datetime.strptime(start, fmt)
+        e = datetime.strptime(end, fmt)
+        mins = (e - s).seconds // 60
+        working_mins = max(0, mins - 60)
+        return max(0, working_mins // 60)
+
+    vets_per_dow = {}
+    for s in vet_schedules:
+        dow = s["day_of_week"]
+        slots = calc_slots(s["start_time"], s["end_time"])
+        vets_per_dow[dow] = vets_per_dow.get(dow, 0) + slots
+
+    cal_days = []
+    for day in range(1, days_in_month + 1):
+        d = date(year, month, day)
+        dow = ["MON","TUE","WED","THU","FRI","SAT","SUN"][d.weekday()]
+        date_str = d.isoformat()
+        booked = appt_counts.get(date_str, 0)
+        total_slots = vets_per_dow.get(dow, 0)
+        emergency_only = dow in ["SAT","SUN"] and total_slots == 0
+        if emergency_only:
+            status = "emergency"
+        elif total_slots == 0:
+            status = "none"
+        elif booked >= total_slots:
+            status = "full"
+        elif booked >= total_slots * 0.5:
+            status = "filling"
+        else:
+            status = "available"
+        cal_days.append({
+            "day": day,
+            "date": date_str,
+            "booked": booked,
+            "total": total_slots,
+            "status": status,
+            "dow": dow,
+            "emergency_only": emergency_only
+        })
+
+    day_detail = None
+    if date_filter:
+        selected = date(int(date_filter[:4]), int(date_filter[5:7]), int(date_filter[8:10]))
+        selected_dow = ["MON","TUE","WED","THU","FRI","SAT","SUN"][selected.weekday()]
+
+        booked_slots = db.execute("""
+            SELECT vet_id, appointment_time
+            FROM APPOINTMENT
+            WHERE appointment_date = ?
+        """, (date_filter,)).fetchall()
+        booked_by_vet = {}
+        for b in booked_slots:
+            booked_by_vet.setdefault(b["vet_id"], set()).add(b["appointment_time"])
+
+        regular_vets = db.execute("""
+            SELECT v.vet_id, v.first_name, v.last_name, v.specialization,
+                   vs.start_time, vs.end_time
+            FROM VETERINARIAN v
+            JOIN VET_SCHEDULE vs ON v.vet_id = vs.vet_id
+            WHERE vs.day_of_week = ?
+            AND v.vet_id NOT IN (5, 9)
+            AND v.is_active = 1
+        """, (selected_dow,)).fetchall()
+
+        emergency_vets = db.execute("""
+            SELECT v.vet_id, v.first_name, v.last_name, v.specialization,
+                   vs.start_time, vs.end_time
+            FROM VETERINARIAN v
+            JOIN VET_SCHEDULE vs ON v.vet_id = vs.vet_id
+            WHERE vs.day_of_week = ?
+            AND v.vet_id IN (5, 9)
+            AND v.is_active = 1
+        """, (selected_dow,)).fetchall()
+
+        def get_time_slots(start, end):
+            fmt = "%H:%M"
+            s = datetime.strptime(start, fmt)
+            e = datetime.strptime(end, fmt)
+            slots = []
+            current = s
+            lunch_start = datetime.strptime("12:00", fmt)
+            lunch_end = datetime.strptime("13:00", fmt)
+            while current < e:
+                if not (lunch_start <= current < lunch_end):
+                    slots.append(current.strftime("%H:%M"))
+                current = datetime.strptime(current.strftime("%H:%M"), fmt)
+                from datetime import timedelta
+                current += timedelta(hours=1)
+            return slots
+
+        vet_details = []
+        for v in regular_vets:
+            all_slots = get_time_slots(v["start_time"], v["end_time"])
+            booked = booked_by_vet.get(v["vet_id"], set())
+            slot_info = [{"time": t, "booked": t in booked} for t in all_slots]
+            vet_details.append({
+                "name": f"Dr. {v['first_name']} {v['last_name']}",
+                "specialization": v["specialization"],
+                "start": v["start_time"],
+                "end": v["end_time"],
+                "slots": slot_info,
+                "available": sum(1 for s in slot_info if not s["booked"]),
+                "total": len(slot_info)
+            })
+
+        emergency_details = []
+        for v in emergency_vets:
+            emergency_details.append({
+                "name": f"Dr. {v['first_name']} {v['last_name']}",
+                "specialization": v["specialization"],
+                "start": v["start_time"],
+                "end": v["end_time"],
+            })
+
+        day_detail = {
+            "date": date_filter,
+            "dow": selected_dow,
+            "vets": vet_details,
+            "emergency": emergency_details
+        }
+
     q = """
         SELECT a.appointment_id, a.appointment_date, a.appointment_time,
                c.first_name||' '||c.last_name AS client_name,
@@ -188,8 +341,13 @@ def appointments():
         q += " AND a.appointment_date=?"; params.append(date_filter)
     q += " ORDER BY a.appointment_date DESC, a.appointment_time"
     rows = db.execute(q, params).fetchall()
+
     return render_template("appointments.html", appointments=rows,
-                           status_filter=status_filter, date_filter=date_filter)
+                           status_filter=status_filter, date_filter=date_filter,
+                           cal_days=cal_days, month_str=month_str,
+                           first_dow=date(year, month, 1).weekday(),
+                           month_label=date(year, month, 1).strftime("%B %Y"),
+                           day_detail=day_detail)
 
 @app.route("/appointments/new", methods=["GET","POST"])
 def new_appointment():
@@ -284,6 +442,14 @@ def new_client():
             flash("Email already exists.", "error")
     return render_template("client_form.html", client=None)
 
+@app.route("/clients/<int:id>/delete", methods=["POST"])
+def delete_client(id):
+    db = get_db()
+    db.execute("DELETE FROM CLIENT WHERE client_id=?", (id,))
+    db.commit()
+    flash("Client deleted.", "success")
+    return redirect(url_for("clients"))
+
 @app.route("/clients/<int:id>/edit", methods=["GET","POST"])
 def edit_client(id):
     db = get_db()
@@ -323,6 +489,24 @@ def api_pets(client_id):
     db = get_db()
     pets = db.execute("SELECT pet_id, pet_name, species FROM PET WHERE client_id=?", (client_id,)).fetchall()
     return jsonify([dict(p) for p in pets])
+
+@app.template_filter('prev_month')
+def prev_month_filter(month_str):
+    year, month = map(int, month_str.split("-"))
+    month -= 1
+    if month == 0:
+        month = 12
+        year -= 1
+    return f"{year}-{month:02d}"
+
+@app.template_filter('next_month')
+def next_month_filter(month_str):
+    year, month = map(int, month_str.split("-"))
+    month += 1
+    if month == 13:
+        month = 1
+        year += 1
+    return f"{year}-{month:02d}"
 
 if __name__ == "__main__":
     init_db()

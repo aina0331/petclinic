@@ -82,7 +82,7 @@ def init_db():
             INSERT INTO CLIENT (first_name,last_name,contact_number,email,address) VALUES
             ('Ricka','Arzola','09171234567','ricka@mail.com','Binan City'),
             ('Aina','Al-harmali','09391234567','aina@mail.com','Pasig City'),
-            ('Cadey','Torralba','09281234567','cadey@mail.com','Makati City')
+            ('Cadey','Torralba','09281234567','cadey@mail.com','Makati City'),
             ('Josh','De Lejos','09451234567','Josh@mail.com','Taguig City'),
             ('Pedro','Lim','09561234567','pedro@mail.com','Manila City');
 

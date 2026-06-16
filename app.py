@@ -81,8 +81,8 @@ def init_db():
             conn.executescript("""
             INSERT INTO CLIENT (first_name,last_name,contact_number,email,address) VALUES
             ('Ricka','Arzola','09171234567','ricka@mail.com','Binan City'),
-            ('Cadey','Torralba','09281234567','cadey@mail.com','Makati City'),
             ('Aina','Al-harmali','09391234567','aina@mail.com','Pasig City'),
+            ('Cadey','Torralba','09281234567','cadey@mail.com','Makati City')
             ('Josh','De Lejos','09451234567','Josh@mail.com','Taguig City'),
             ('Pedro','Lim','09561234567','pedro@mail.com','Manila City');
 
@@ -92,7 +92,7 @@ def init_db():
             ('Vash','Arzola','Surgery','09171110003'),
             ('Grachel','Bautista','Dermatology','09171110004'),
             ('Cyrille','Ruiz','Emergency & Critical Care','09171110005'),
-            ('Eros','Agultong','Internal Medicine','09171110006'),
+            ('Eros','Agulto','Internal Medicine','09171110006'),
             ('Emman','Flores','Oncology','09171110007'),
             ('Sofia','Reyes','Ophthalmology','09171110008');
 

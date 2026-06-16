@@ -80,20 +80,20 @@ def init_db():
         if conn.execute("SELECT COUNT(*) FROM CLIENT").fetchone()[0] == 0:
             conn.executescript("""
             INSERT INTO CLIENT (first_name,last_name,contact_number,email,address) VALUES
-            ('Juan','Dela Cruz','09171234567','juan@mail.com','Quezon City'),
-            ('Maria','Reyes','09281234567','maria@mail.com','Makati City'),
-            ('Carlos','Santos','09391234567','carlo@mail.com','Pasig City'),
-            ('Ana','Garcia','09451234567','ana@mail.com','Taguig City'),
+            ('Ricka','Arzola','09171234567','ricka@mail.com','Binan City'),
+            ('Aina','Al-harmali','09391234567','aina@mail.com','Pasig City'),
+            ('Cadey','Torralba','09281234567','cadey@mail.com','Makati City'),
+            ('Josh','De Lejos','09451234567','Josh@mail.com','Taguig City'),
             ('Pedro','Lim','09561234567','pedro@mail.com','Manila City');
 
             INSERT INTO VETERINARIAN (first_name,last_name,specialization,contact_number) VALUES
-            ('Ricardo','Santos','General Practice','09171110001'),
-            ('Elena','Cruz','Dental Care','09171110002'),
-            ('Marco','Bautista','Surgery','09171110003'),
-            ('Lisa','Torres','Dermatology','09171110004'),
-            ('Jose','Ramos','Emergency & Critical Care','09171110005'),
-            ('Anna','Villanueva','Internal Medicine','09171110006'),
-            ('Miguel','Flores','Oncology','09171110007'),
+            ('Kelly','Garcia','General Practice','09171110001'),
+            ('Thea','Dela Cruz','Dental Care','09171110002'),
+            ('Vash','Arzola','Surgery','09171110003'),
+            ('Grachel','Bautista','Dermatology','09171110004'),
+            ('Cyrille','Ruiz','Emergency & Critical Care','09171110005'),
+            ('Eros','Agulto','Internal Medicine','09171110006'),
+            ('Emman','Flores','Oncology','09171110007'),
             ('Sofia','Reyes','Ophthalmology','09171110008');
             ('Maria','Santos','Emergency & Critical Care','09171110009');
 
